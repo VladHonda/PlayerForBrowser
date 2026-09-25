@@ -102,10 +102,15 @@ curT=$('cur'),remT=$('rem');
 let url=null,subU=null,vol=1,seekg=0,hideT=0,hudT=0,plT=0,
     plst=[],idx=-1,pin=0,subsOn=1,cur=null,curHash=null;
 const H=2200,PH=900,E=22,col=new Intl.Collator(0,{numeric:1,sensitivity:'base'});
-const fmt=t=>{
-  if(!isFinite(t)||t<0)t=0;
-  const m=Math.floor(t/60),s=Math.floor(t%60);
-  return m+':'+String(s).padStart(2,'0');
+const fmt = t => {
+  if (!isFinite(t) || t < 0) t = 0;
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const s = Math.floor(t % 60);
+  if (h > 0) {
+    return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+  return m + ':' + String(s).padStart(2, '0');
 };
 const base=n=>n.replace(/\.[^.]+$/,'').toLowerCase();
 const clean=n=>base(n).replace(/[._]/g,' ')
