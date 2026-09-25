@@ -100,24 +100,38 @@ file=$('file'),sub=$('sub'),wrap=$('wrap'),
 pl=$('playlist'),list=$('list'),cnt=$('cnt'),edge=$('edge'),
 curT=$('cur'),remT=$('rem');
 let url=null,subU=null,vol=1,seekg=0,hideT=0,hudT=0,plT=0,
-    plst=[],idx=-1,pin=0,subsOn=1,cur=null,curHash=null;
+    plst=[],idx=-1,pin=0,subsOn=1,cur=null,curHash=null,titleScroll=null;
 const H=2200,PH=900,E=22,col=new Intl.Collator(0,{numeric:1,sensitivity:'base'});
-const fmt = t => {
-  if (!isFinite(t) || t < 0) t = 0;
-  const h = Math.floor(t / 3600);
-  const m = Math.floor((t % 3600) / 60);
-  const s = Math.floor(t % 60);
-  if (h > 0) {
-    return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-  }
-  return m + ':' + String(s).padStart(2, '0');
+
+const fmt=t=>{
+  if(!isFinite(t)||t<0)t=0;
+  const h=Math.floor(t/3600),
+        m=Math.floor((t%3600)/60),
+        s=Math.floor(t%60);
+  if(h>0) return h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  return m+':'+String(s).padStart(2,'0');
 };
+
 const base=n=>n.replace(/\.[^.]+$/,'').toLowerCase();
 const clean=n=>base(n).replace(/[._]/g,' ')
   .replace(/\b(720p|1080p|2160p|4k|uhd|hdr|x264|x265|h264|h265|hevc|avc|web-?dl|webrip|bluray|blu-ray|hdtv|dvdrip|brrip|hdrip|proper|repack|internal|extended|unrated|directors?.cut|yify|rarbg|ettv|eztv|sparks|killers|amzn|nf|dsnp|hulu|hbo|atvp)\b/gi,' ')
   .replace(/\s+/g,' ').trim();
 const ep=n=>{const m=n.match(/[sS](\d{1,2})[eE](\d{1,3})|[.\s_](\d{1,2})[xX](\d{1,3})/);return m?{s:+(m[1]||m[3]),e:+(m[2]||m[4])}:0};
 const shortName=n=>n&&n.length>32?n.slice(0,30)+'…':n||'';
+
+const setTitle=name=>{
+  clearInterval(titleScroll);
+  if(!name){document.title='Browser KMPlayer';return}
+  const text=name+'  •  ';
+  let i=0;
+  document.title=text;
+  if(name.length>18){
+    titleScroll=setInterval(()=>{
+      i=(i+1)%text.length;
+      document.title=text.slice(i)+text.slice(0,i);
+    },280);
+  }
+};
 
 async function osHash(file){
   const SIZE=65536;
@@ -215,10 +229,10 @@ const render=()=>{
   });
 };
 const rm=i=>{
-  if(i===idx){plst.splice(i,1);if(!plst.length){idx=-1;cur=null;curHash=null;rev();revSub();v.removeAttribute('src');v.load();play.textContent='▶';msg('Empty','',2e3)}else{idx=Math.min(i,plst.length-1);load(plst[idx])}}
+  if(i===idx){plst.splice(i,1);if(!plst.length){idx=-1;cur=null;curHash=null;rev();revSub();v.removeAttribute('src');v.load();play.textContent='▶';setTitle(null);msg('Empty','',2e3)}else{idx=Math.min(i,plst.length-1);load(plst[idx])}}
   else{plst.splice(i,1);if(i<idx)idx--}render();
 };
-const clr=()=>{if(idx>=0&&plst[idx]){plst=[plst[idx]];idx=0}else{plst=[];idx=-1;cur=null;curHash=null}render();msg('Cleared','',2e3)};
+const clr=()=>{if(idx>=0&&plst[idx]){plst=[plst[idx]];idx=0}else{plst=[];idx=-1;cur=null;curHash=null;setTitle(null)}render();msg('Cleared','',2e3)};
 const togPl=()=>{pin=!pin;pin?showPl():schedPl()};
 
 const updateTime=()=>{
@@ -229,7 +243,7 @@ const updateTime=()=>{
 };
 
 const load=(f,sf=0)=>{
-  rev();revSub();cur=f;curHash=null;url=URL.createObjectURL(f);v.src=url;v.load();unlock();msg('Loading…','warn',0);render();
+  rev();revSub();cur=f;curHash=null;setTitle(f.name);url=URL.createObjectURL(f);v.src=url;v.load();unlock();msg('Loading…','warn',0);render();
   osHash(f).then(h=>curHash=h).catch(()=>{});
   v.addEventListener('loadedmetadata',async()=>{
     seek.max=v.duration||0;seek.value=0;updateTime();
@@ -306,7 +320,7 @@ v.onplaying=()=>{
 };
 v.onvolumechange=()=>{!v.muted&&(vol=v.volume);mutUI()};
 v.onerror=()=>{const m={1:'ABORTED',2:'NETWORK',3:'DECODE',4:'UNSUPPORTED'};msg(m[v.error?.code]||'ERROR','err',4e3);idx+1<plst.length?setTimeout(next,600):rev()};
-onbeforeunload=()=>{rev();revSub()};
+onbeforeunload=()=>{rev();revSub();clearInterval(titleScroll)};
 msg('Drop videos/subs · subs stay in memory only','',0);show(1);setTimeout(hide,3e3);
 })();
 </script>
